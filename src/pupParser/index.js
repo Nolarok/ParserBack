@@ -6,34 +6,37 @@ const parser = new PupParser({headless: false})
 const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
 
 export const FSSPParser = async (taskList, before, after) => {
-  parser.init().then(async () => {
-    const newTask = parser.createTask('fssp', {
-      maxNumberOfAttempts: 3,
-      errorScript: (data) => {
-        if (data.createPage && data.createPage && data.createPage.page) {
-          data.createPage.page.close()
-        }
+  await parser.init()
+
+  const newTask = parser.createTask('fssp', {
+    maxNumberOfAttempts: 1,
+    errorScript: (data) => {
+      if (data.createPage && data.createPage && data.createPage.page) {
+        data.createPage.page.close()
       }
-    })
-
-    newTask.addScript('createPage', createPage)
-    newTask.addScript('searchPage', searchPage)
-    newTask.addScript('resolveCaptcha', resolveCaptcha)
-    newTask.addScript('parseTable', parseTable)
-
-    await parser.runSeries('fssp', taskList, {
-      numberOfThreads: 1,
-      after,
-      before,
-    })
-
-    await parser.browser.close()
+    }
   })
+
+  newTask.addScript('createPage', createPage)
+  newTask.addScript('searchPage', searchPage)
+  newTask.addScript('resolveCaptcha', resolveCaptcha)
+  newTask.addScript('parseTable', parseTable)
+
+  await parser.runSeries('fssp', taskList, {
+    numberOfThreads: 1,
+    after,
+    before,
+  })
+
+  await parser.browser.close()
 }
 
 async function createPage(data) {
   const page = await parser.createPage('http://fssprus.ru/iss/ip')
-  return {page}
+  return {
+    page,
+    initial: data.initial
+  }
 }
 
 async function searchPage(data) {
@@ -56,7 +59,6 @@ async function searchPage(data) {
         }
       },
     ]
-
     await parser.fillForm(page, inputData)
     await page.waitFor(200)
     // page.screenshot({path: `./screen/test${+new Date()}.png`})
@@ -77,6 +79,12 @@ async function resolveCaptcha(data) {
     let captchaImage, inputString
 
     for (let i = 0; i < 3; i++) {
+      try {
+        await page.waitFor('#capchaVisual', {timeout: 3000})
+      } catch {
+        continue
+      }
+
       captchaImage = await page.evaluate('document.querySelector("#capchaVisual").getAttribute("src")')
 
       inputString = await lamaRobot.solveCaptcha(captchaImage)
@@ -129,7 +137,7 @@ async function parseTable(data) {
       await page.close()
       return [
         [
-          `${initial['Имя']} ${initial['Фамилия']} ${initial['Отчество']} ${initial['Дата']}`,
+          `${initial['Фамилия']} ${initial['Имя']}  ${initial['Отчество']} ${initial['Дата']}`,
           'Нет данных', 'Нет данных', 'Нет данных', 'Нет данных', 'Нет данных', 'Нет данных'
         ]
       ]

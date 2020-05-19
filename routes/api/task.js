@@ -10,8 +10,8 @@ router.get('/', async (ctx, next) => {
   await taskCtrl.getTask(ctx)
 })
 
-router.get('/start/:fileId', async (ctx, next) => {
-  await taskCtrl.startParse(ctx)
+router.get('/data/:fileId', async (ctx, next) => {
+  await taskCtrl.getResult(ctx)
 })
 
 router.delete('/', async (ctx) => {

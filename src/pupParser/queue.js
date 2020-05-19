@@ -48,7 +48,7 @@ export function Queue (input, length) {
 
   this.remove = (task) => {
     this.queue = this.queue.filter(item => item !== task)
-    console.log({'this.queue.length': this.queue.length, 'input.length': input.length,  counter: counter + 1})
+    // console.log({'this.queue.length': this.queue.length, 'input.length': input.length,  counter: counter + 1})
     if (this.queue.length === 0 && counter + 1 >= input.length) {
       _resolve()
     }

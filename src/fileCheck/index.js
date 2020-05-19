@@ -2,7 +2,6 @@
 export function parseStringToCSV(content) {
   const arr = content.split('\n')
   const cols = defineCols(arr[0].split(','))
-  console.log({cols})
 
   if (!~cols.name || !~cols.surname || !~cols.data) {
     return {

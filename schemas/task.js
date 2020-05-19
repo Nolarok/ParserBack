@@ -14,7 +14,7 @@ const TaskSchema = new Schema({
 
   status: {
     type: String,
-    default: TaskStatus.QUEUE,
+    default: TaskStatus.CREATED,
   },
 
   payload: {
@@ -32,10 +32,30 @@ const TaskSchema = new Schema({
     default: null,
   },
 
-  fileId: {
+  jobId: {
     type: Schema.Types.ObjectId,
   }
 })
 
 
-mongoose.model('Task', TaskSchema)
+const Task = mongoose.model('Task', TaskSchema)
+
+// Task.save((data) => {
+//   console.log('save', {data})
+// })
+
+TaskSchema.post(('deleteMany'), (doc) => {
+  console.log({doc})
+})
+//
+// TaskSchema.pre(('deleteMany'), (doc) => {
+//   console.log({doc})
+// })
+//
+// TaskSchema.post(('save'), (doc) => {
+//   console.log({doc})
+// })
+//
+// TaskSchema.pre(('save'), (doc) => {
+//   console.log({doc})
+// })

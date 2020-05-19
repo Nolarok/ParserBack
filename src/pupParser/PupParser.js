@@ -16,7 +16,8 @@ export default function Pup(launchOptions) {
     const context = await this.browser.createIncognitoBrowserContext()
     const page = await context.newPage()
     await page.setViewport({height: 1680, width: 1920})
-    await page.setRequestInterception(!!interceptors)
+
+    interceptors && await page.setRequestInterception(interceptors)
     interceptors && await interceptors(page)
 
     this.pages.push(page)
@@ -31,7 +32,6 @@ export default function Pup(launchOptions) {
   }
 
   this.runSeries = async (taskName, initialArray, options) => {
-    console.time(`this.runSeries: ${taskName}`)
     const result = []
     const queue = new Queue(initialArray, options.numberOfThreads)
 
@@ -48,7 +48,6 @@ export default function Pup(launchOptions) {
 
     await queue.start()
 
-    console.timeEnd(`this.runSeries: ${taskName}`)
     return result
   }
 
