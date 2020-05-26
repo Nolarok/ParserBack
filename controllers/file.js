@@ -28,11 +28,24 @@ export default class FileController {
   }
 
   async getFile(ctx) {
-    ctx.body = await File.find()
+    let {limit = 10, offset = 0} = ctx.query
+    limit = +limit
+    offset = +offset
+
+    if (ctx.params.fileId) {
+      ctx.body = await File.findOne({_id: ctx.params.fileId})
+        .select('-data -updated')
+    } else {
+      ctx.body = await File.find()
+        .select('-data -updated')
+        .sort('-created')
+        .limit(limit)
+        .skip(offset)
+    }
   }
 
   async clearTable(ctx) {
       await File.deleteMany()
-      ctx.body = '200'
+      ctx.body = 200
   }
 }

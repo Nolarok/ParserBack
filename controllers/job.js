@@ -1,10 +1,8 @@
 import mongoose from "mongoose"
-import {TaskStatus, JobStatus} from '../types'
-import {RESULT} from '../src/pupParser/types'
+import {generateResponseError, JobStatus, ResponseError} from '../types'
 
 import '../schemas/job'
 import {parseStringToCSV} from "../src/fileCheck"
-import {FSSPParser} from '../src/pupParser'
 
 const ObjectId = mongoose.Types.ObjectId
 const Job = mongoose.model('Job')
@@ -30,9 +28,7 @@ export default class JobController {
     })
 
     await Task.insertMany(data, (errors) => {
-      if (errors) {
-        console.error(errors)
-      }
+      errors && console.error(errors)
     })
 
     ctx.body = newJob._id
@@ -40,9 +36,19 @@ export default class JobController {
 
   async start(ctx) {
     const jobId = new ObjectId(ctx.params.jobId)
-
     const job = await Job.findOne({_id: jobId})
-    const hasActiveJob = await Job.findOne({status: JobStatus.PROCESS})
+
+    if (!job) {
+      [ctx.body, ctx.status] = generateResponseError(ResponseError.RECORD_NOT_FOUND, {document: 'Job', id: jobId})
+      return
+    }
+
+    if (job.status === JobStatus.COMPLETED) {
+      ctx.status = 200
+      return
+    }
+
+    const hasActiveJob = Boolean(await Job.findOne({status: JobStatus.PROCESS}))
 
     await Job.updateOne(
       {_id: jobId},
@@ -70,7 +76,96 @@ export default class JobController {
     ctx.body = 200
   }
 
-  async test(ctx) {
+  async unloadDataString(ctx) {
+    const response = await Task.find({
+      jobId: ctx.params.jobId
+    })
 
+    const result = response.reduce((acc, item) => {
+      if (Array.isArray(item.result)) {
+        const data = item.result.map((row) => {
+          return row.filter((cell) => {
+            return !~cell.indexOf('<h3>')
+          })
+        })
+
+        acc = [...acc, ...data]
+      }
+
+      return acc
+    }, [])
+
+    const temp = result.map(row => {
+      const modCurrentRow = row.map((cell) => {
+        return cell.replace(/,/g, ' ')
+      })
+
+      return modCurrentRow.join(',')
+    })
+
+    ctx.body = temp.join('\n')
+  }
+
+  async unloadData(ctx) {
+    const response = await Task.find({
+      jobId: ctx.params.jobId
+    })
+
+    const result = response.reduce((acc, item) => {
+      if (Array.isArray(item.result)) {
+        const data = item.result.map((row) => {
+          row[0] = row[0].replace(/<div.+div/gm, '')
+          return row.filter((cell) => {
+            return !~cell.indexOf('<h3>')
+          })
+        })
+
+        acc = [...acc, ...data]
+      }
+
+      return acc
+    }, [])
+
+    ctx.body = result
+  }
+
+  async getTableData(ctx) {
+    let {limit = 10, offset = 0} = ctx.query
+    limit = +limit
+    offset = +offset
+
+    const jobs = await Job.find()
+      .sort('-created')
+      .skip(limit * offset)
+      .limit(10)
+
+    ctx.body = jobs
+  }
+
+  async getJob(ctx) {
+    let {limit = 10, offset = 0} = ctx.query
+    limit = +limit
+    offset = +offset
+
+    if (ctx.query.byFileId) {
+      ctx.body = await Job.find({fileId: ctx.params.id})
+        .sort('-created')
+        .skip(limit * offset)
+        .limit(limit)
+    } else if (ctx.params.id) {
+      ctx.body = await Job.findOne({_id: ctx.params.id})
+    } else {
+       const result = await Job.find()
+        .sort('-created')
+        .skip(limit * offset)
+        .limit(limit)
+
+      const count = await Job.countDocuments()
+
+      ctx.body = {
+        data: result,
+        count
+      }
+    }
   }
 }

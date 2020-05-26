@@ -104,21 +104,6 @@ export default function Pup(launchOptions) {
     await this.browser.close()
   }
 
-  this.awaitRequest = ({page, searchString}) => {
-    return new Promise((resolve, reject) => {
-      const timerId = setTimeout(() => {
-        reject('request timeout')
-      }, 2000)
-
-      page.on('requestfinished', (request) => {
-        if (request.url().includes(searchString)) {
-          clearTimeout(timerId)
-          resolve()
-        }
-      })
-    })
-  }
-
   this.waitForResponse = async (page, string) => {
     return await page.waitForResponse(response => {
       return response.url().startsWith(string)

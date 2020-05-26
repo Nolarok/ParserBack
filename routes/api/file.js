@@ -10,6 +10,10 @@ router.get('/', async (ctx) => {
   await fileCtrl.getFile(ctx)
 })
 
+router.get('/:fileId', async (ctx) => {
+  await fileCtrl.getFile(ctx)
+})
+
 
 router.post('/', async (ctx) => {
   await fileCtrl.createFile(ctx)

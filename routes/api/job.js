@@ -22,10 +22,20 @@ router.delete('/', async (ctx, next) => {
   await jobCtrl.clearTable(ctx)
 })
 
-router.get('/test', async (ctx, next) => {
-  await jobCtrl.test(ctx)
+router.get('/unload/:jobId', async (ctx, next) => {
+  await jobCtrl.unloadData(ctx)
 })
 
+router.get('/data', async (ctx, next) => {
+  await jobCtrl.getTableData(ctx)
+})
 
+router.get('/:id', async (ctx, next) => {
+  await jobCtrl.getJob(ctx)
+})
+
+router.get('/', async (ctx, next) => {
+  await jobCtrl.getJob(ctx)
+})
 
 export default router

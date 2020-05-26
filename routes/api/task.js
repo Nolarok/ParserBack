@@ -6,6 +6,10 @@ const taskCtrl = new TaskCtrl()
 const router = new Router()
 router.prefix('/api/v1/task')
 
+router.get('/:id', async (ctx, next) => {
+  await taskCtrl.getTask(ctx)
+})
+
 router.get('/', async (ctx, next) => {
   await taskCtrl.getTask(ctx)
 })

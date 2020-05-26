@@ -23,7 +23,7 @@ export const FSSPParser = async (taskList, before, after) => {
   newTask.addScript('parseTable', parseTable)
 
   await parser.runSeries('fssp', taskList, {
-    numberOfThreads: 1,
+    numberOfThreads: 2,
     after,
     before,
   })
@@ -107,17 +107,16 @@ async function resolveCaptcha(data) {
           break
         } else {
           console.error('Invalid captcha: ', inputString && !inputString.error)
-          await page.screenshot({path: `./screen/${+new Date()}.png`})
+          // await page.screenshot({path: `./screen/${+new Date()}.png`})
         }
       }
       else {
         console.error('Invalid captcha: ', inputString && !inputString.error)
-        await page.screenshot({path: `./screen/${+new Date()}.png`})
+        // await page.screenshot({path: `./screen/${+new Date()}.png`})
         page.click('#capchaVisual')
         await parser.waitForResponse(page,  'data:image')
       }
     }
-
 
     return {page}
   } catch(error) {

@@ -37,6 +37,11 @@ JobSchema.pre('deleteMany', async function () {
   await Task.deleteMany()
 })
 
+JobSchema.static('getCountItems', async function(query) {
+  const result = await Job.find(query)
+  return result.length || 0
+})
+
 JobSchema.static('startParse', async function startParse(job) {
   if (!job) {
     job = await Job.findOne({
@@ -58,13 +63,13 @@ JobSchema.static('startParse', async function startParse(job) {
 
   const docs = await Task.find({
     jobId: new ObjectId(jobId),
-    status: {$or: [TaskStatus.CREATED, TaskStatus.ERROR]}
+    status: {$in: [TaskStatus.CREATED, TaskStatus.ERROR]}
   })
 
   await Task.updateMany(
     {
       jobId,
-      status: { $or: [TaskStatus.CREATED, TaskStatus.ERROR] }
+      status: { $in: [TaskStatus.CREATED, TaskStatus.ERROR] }
     },
     {status: TaskStatus.QUEUE}
   )
@@ -113,7 +118,8 @@ JobSchema.static('startParse', async function startParse(job) {
     },
   )
 
-  await Job.updateOne({_id: jobId}, {status: JobStatus.COMPLETED})
+  const jobHasErrors = await Task.findOne({jobId, status: TaskStatus.ERROR})
+  await Job.updateOne({_id: jobId}, {status: jobHasErrors? JobStatus.COMPLETED_WITH_ERRORS : JobStatus.COMPLETED})
   startParse()
 })
 
