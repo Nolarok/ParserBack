@@ -114,7 +114,9 @@ export default class JobController {
     const result = response.reduce((acc, item) => {
       if (Array.isArray(item.result)) {
         const data = item.result.map((row) => {
+          row = row.map(item => item.replace(/(\s?,\s)/gm, ' '))
           row[0] = row[0].replace(/<div.+div/gm, '')
+
           return row.filter((cell) => {
             return !~cell.indexOf('<h3>')
           })
