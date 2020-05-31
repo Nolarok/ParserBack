@@ -14,6 +14,9 @@ router.get('/:fileId', async (ctx) => {
   await fileCtrl.getFile(ctx)
 })
 
+router.get('/content/:fileId', async (ctx) => {
+  await fileCtrl.getFileContent(ctx)
+})
 
 router.post('/', async (ctx) => {
   await fileCtrl.createFile(ctx)

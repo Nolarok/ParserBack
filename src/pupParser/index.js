@@ -2,7 +2,7 @@ import PupParser from './PupParser'
 import LamaRobot from '../captcha/LamaRobot'
 import {INPUT_TYPE, RESULT} from './types'
 
-const parser = new PupParser({headless: false})
+const parser = new PupParser({headless: true})
 const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
 
 export const FSSPParser = async (taskList, before, after) => {
