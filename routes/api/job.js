@@ -6,6 +6,11 @@ const router = new Router()
 
 router.prefix('/api/v1/job')
 
+router.get('/test/:jobId', async (ctx, next) => {
+  console.log('ROUTE')
+  await jobCtrl.test(ctx)
+})
+
 router.post('/create/:fileId', async (ctx, next) => {
   await jobCtrl.create(ctx)
 })

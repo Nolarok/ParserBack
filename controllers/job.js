@@ -3,11 +3,23 @@ import {generateResponseError, JobStatus, ResponseError} from '../types'
 
 import '../schemas/job'
 import {parseStringToCSV} from "../src/fileCheck"
+import {generate, read} from '../src/excel/index'
+
 
 const ObjectId = mongoose.Types.ObjectId
 const Job = mongoose.model('Job')
 const Task = mongoose.model('Task')
 const File = mongoose.model('File')
+
+const matches = {
+  0: 'debtor',
+  1: 'exec_production',
+  2: 'requisites',
+  3: 'date_and_reason',
+  4: 'subject_and_amount',
+  5: 'department_of_bailiffs',
+  6: 'bailiff',
+}
 
 export default class JobController {
   async create(ctx) {
@@ -21,7 +33,9 @@ export default class JobController {
     await newJob.save()
 
     const file = await File.findOne({_id: fileId})
-    let data = parseStringToCSV(file.data).data
+    let data = (await read(file.data)).data
+
+    console.log(data)
 
     data = data.map(item => {
       return {payload: item, jobId: newJob._id}
@@ -111,24 +125,18 @@ export default class JobController {
       jobId: ctx.params.jobId
     })
 
-    const result = response.reduce((acc, item) => {
-      if (Array.isArray(item.result)) {
-        const data = item.result.map((row) => {
-          row = row.map(item => item.replace(/(\s?,\s)/gm, ' '))
-          row[0] = row[0].replace(/<div.+div/gm, '')
+    const result = response.map((task) => {
+      return task.result.map((result) => {
+         return result.reduce((acc, item, index) => {
+           acc[matches[index]] = item
 
-          return row.filter((cell) => {
-            return !~cell.indexOf('<h3>')
-          })
-        })
+           return acc
+         }, {})
+      })
+    }).flat()
 
-        acc = [...acc, ...data]
-      }
-
-      return acc
-    }, [])
-
-    ctx.body = result
+    ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    ctx.body = await generate(result)
   }
 
   async getTableData(ctx) {
@@ -145,7 +153,7 @@ export default class JobController {
   }
 
   async getJob(ctx) {
-    let {limit = 10, offset = 0} = ctx.query
+    let {limit = 10, offset = 0, from, to} = ctx.query
     limit = +limit
     offset = +offset
 
@@ -157,7 +165,12 @@ export default class JobController {
     } else if (ctx.params.id) {
       ctx.body = await Job.findOne({_id: ctx.params.id})
     } else {
-       const result = await Job.find()
+      const result = await Job.find({
+        created: {
+          $gte: from,
+          $lte: to
+        }
+      })
         .sort('-created')
         .skip(limit * offset)
         .limit(limit)
@@ -169,5 +182,14 @@ export default class JobController {
         count
       }
     }
+  }
+
+  async test(ctx) {
+
+
+    const result = await generate()
+
+    ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    ctx.body = result
   }
 }

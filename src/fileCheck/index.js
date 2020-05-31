@@ -17,9 +17,9 @@ export function parseStringToCSV(content) {
       return acc
     }
 
-    // TODO добавить валидаторы
+    // TODO добавить_валидаторы
     if (!parsedRow[cols.name] || !parsedRow[cols.surname] || !parsedRow[cols.date]) {
-      acc.errors.push({row: index, message: 'Строка не валидна', content: row})
+      acc.errors.push({row: index, message: 'Строка не должна быть пустой', content: row})
       return acc
     }
 

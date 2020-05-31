@@ -1,15 +1,15 @@
 import mongoose from 'mongoose'
 
-import { parseStringToCSV } from '../src/fileCheck/index'
 import '../schemas/file'
+import {read, getFile, generate} from '../src/excel/index'
 
 const File = mongoose.model('File')
 
 export default class FileController {
   async createFile(ctx) {
-    const {content, mimeType, filename} = ctx.request.body
+    const {content, filename} = ctx.request.body
 
-    const fileErrors = parseStringToCSV(content).errors
+    const fileErrors = (await read(content)).errors
 
     if (fileErrors.length) {
       ctx.status = 400
@@ -29,18 +29,18 @@ export default class FileController {
   }
 
   async getFileContent(ctx) {
-    const {fileId} = ctx.request.body
+    const fileId = ctx.params.fileId
 
-    const file = await File.findOne()
-      .select('data')
+    const file = await File.findOne({_id: fileId})
+      .select('data filename')
 
-    const result = parseStringToCSV(file.data).data.map(row => Object.values(row))
-
-    ctx.body = result
+    ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    ctx.set('Content-Disposition', `attachment; filename="${file.filename}"`)
+    ctx.body = await getFile(file.data)
   }
 
   async getFile(ctx) {
-    let {limit = 10, offset = 0} = ctx.query
+    let {limit = 10, offset = 0, from, to} = ctx.query
     limit = +limit
     offset = +offset
 
@@ -50,19 +50,24 @@ export default class FileController {
 
     } else {
       const count = await File.countDocuments()
-      const data = await File.find()
+      const data = await File.find({
+        created: {
+          $gte: from,
+          $lte: to
+        }
+      })
         .select('-data -updated')
         .sort('-created')
         .limit(limit)
         .skip(offset)
 
 
-      ctx.body = { data, count }
+      ctx.body = {data, count}
     }
   }
 
   async clearTable(ctx) {
-      await File.deleteMany()
-      ctx.body = 200
+    await File.deleteMany()
+    ctx.body = 200
   }
 }
