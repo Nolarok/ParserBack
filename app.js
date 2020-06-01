@@ -7,6 +7,14 @@ import {dbConnect} from './src/db'
 async function start() {
   env.config()
 
+  console.log({
+    DB_NAME: process.env.DB_NAME,
+    DB_HOST: process.env.DB_HOST,
+    DB_PORT: process.env.DB_PORT,
+    SERVER_HOST: process.env.SERVER_HOST,
+    SERVER_PORT: process.env.SERVER_PORT,
+  })
+
   const app = new Koa()
 
   await dbConnect({
