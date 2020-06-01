@@ -1,8 +1,7 @@
 import mongoose from "mongoose"
-import {generateResponseError, JobStatus, ResponseError} from '../types'
+import {generateResponseError, JobStatus, ResponseError, TaskStatus} from '../types'
 
 import '../schemas/job'
-import {parseStringToCSV} from "../src/fileCheck"
 import {generate, read} from '../src/excel/index'
 
 
@@ -34,8 +33,6 @@ export default class JobController {
 
     const file = await File.findOne({_id: fileId})
     let data = (await read(file.data)).data
-
-    console.log(data)
 
     data = data.map(item => {
       return {payload: item, jobId: newJob._id}
@@ -165,17 +162,33 @@ export default class JobController {
     } else if (ctx.params.id) {
       ctx.body = await Job.findOne({_id: ctx.params.id})
     } else {
-      const result = await Job.find({
+      const query = {
         created: {
           $gte: from,
           $lte: to
         }
-      })
+      }
+
+      const count = await Job.countDocuments(query)
+      const response = await Job.find(query)
         .sort('-created')
         .skip(limit * offset)
         .limit(limit)
 
-      const count = await Job.countDocuments()
+      const result = []
+
+      for (let i = 0; i < response.length; i++) {
+        const job = response[i].toObject()
+        console.log({job})
+        job.tasksState = {
+          failed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.ERROR}) | NaN,
+          completed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.COMPLETED}) | NaN,
+          summary: await Task.countDocuments({jobId: response[i]._id}) | NaN,
+          notProcessed: await Task.countDocuments({jobId: response[i]._id, status: {$in: [TaskStatus.CREATED, TaskStatus.QUEUE]}})  | NaN
+        }
+
+        result.push(job)
+      }
 
       ctx.body = {
         data: result,

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 import '../schemas/file'
-import {read, getFile, generate} from '../src/excel/index'
+import {read, getFile} from '../src/excel/index'
 
 const File = mongoose.model('File')
 
@@ -49,18 +49,19 @@ export default class FileController {
         .select('-data -updated')
 
     } else {
-      const count = await File.countDocuments()
-      const data = await File.find({
+      const query = {
         created: {
           $gte: from,
           $lte: to
         }
-      })
+      }
+
+      const count = await File.countDocuments(query)
+      const data = await File.find(query)
         .select('-data -updated')
         .sort('-created')
         .limit(limit)
         .skip(offset)
-
 
       ctx.body = {data, count}
     }
