@@ -1,14 +1,16 @@
 import PupParser from './PupParser'
 import LamaRobot from '../captcha/LamaRobot'
 import {INPUT_TYPE, RESULT} from './types'
+import {DocumentType} from '../excel'
 
+const MAX_PAGE_LIFE = 30000
 const parser = new PupParser({headless: true})
 const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
 
-export const FSSPParser = async (taskList, before, after) => {
-  await parser.init()
+export const FSSPParser = async (parseType, taskList, before, after) => {
+  FSSPParser.browser = await parser.init()
 
-  const newTask = parser.createTask('fssp', {
+  const FIOTask = parser.createTask('parseByFIO', {
     maxNumberOfAttempts: 1,
     errorScript: (data) => {
       if (data.createPage && data.createPage && data.createPage.page) {
@@ -17,25 +19,57 @@ export const FSSPParser = async (taskList, before, after) => {
     }
   })
 
-  newTask.addScript('createPage', createPage)
-  newTask.addScript('searchPage', searchPage)
-  newTask.addScript('resolveCaptcha', resolveCaptcha)
-  newTask.addScript('parseTable', parseTable)
+  FIOTask.addScript('createPage', createPage)
+  FIOTask.addScript('searchPage', searchPage)
+  FIOTask.addScript('resolveCaptcha', resolveCaptcha)
+  FIOTask.addScript('parseTable', parseTable)
 
-  await parser.runSeries('fssp', taskList, {
-    numberOfThreads: 2,
-    after,
-    before,
+  const IPTask = parser.createTask('parseByIP', {
+    maxNumberOfAttempts: 1,
+    errorScript: (data) => {
+      if (data.createPage && data.createPage && data.createPage.page) {
+        data.createPage.page.close()
+      }
+    }
   })
+
+  IPTask.addScript('createPage', createPage)
+  IPTask.addScript('searchPage', searchPageIP)
+  IPTask.addScript('resolveCaptcha', resolveCaptcha)
+  IPTask.addScript('parseTable', parseTable)
+
+
+  if (parseType === DocumentType.FIO) {
+    console.log('1')
+    await parser.runSeries('parseByFIO', taskList, {
+      numberOfThreads: 4,
+      after,
+      before,
+    })
+  }
+
+  if (parseType === DocumentType.IP) {
+    console.log('2')
+    await parser.runSeries('parseByIP', taskList, {
+      numberOfThreads: 2,
+      after,
+      before,
+    })
+  }
+
 
   await parser.browser.close()
 }
 
 async function createPage(data) {
   const page = await parser.createPage('http://fssprus.ru/iss/ip')
+  const timer = setTimeout(() => {
+    page.close()
+  }, MAX_PAGE_LIFE)
   return {
     page,
-    initial: data.initial
+    initial: data.initial,
+    timer,
   }
 }
 
@@ -73,8 +107,37 @@ async function searchPage(data) {
   }
 }
 
+async function searchPageIP(data) {
+  try {
+    const initial = data.initial
+    const page = data.createPage.page
+
+    await page.click('#ip_form > div > div.row.e-inputgroup > div:nth-child(3) > label')
+    await page.waitFor(200)
+
+    const inputData = [
+      {
+        selector: '#input04',
+        value: initial['Номер_ИП'],
+      },
+    ]
+    await parser.fillForm(page, inputData)
+    await page.waitFor(200)
+    // page.screenshot({path: `./screen/test${+new Date()}.png`})
+    await page.click('#btn-sbm')
+    await parser.waitForResponse(page, 'https://is.fssprus.ru/ajax_search')
+
+    return {page}
+  } catch (error) {
+    // console.log(error)
+    // await page.screenshot({path: `./screen/scripts/searchPage/${+new Date()}.png`})
+    throw error
+  }
+}
+
 async function resolveCaptcha(data) {
   const {page} = data.searchPage
+
   try {
     let captchaImage, inputString
 
@@ -145,10 +208,11 @@ async function parseTable(data) {
     const getTableData = async () => {
       try {
         return await page.evaluate(`
+        document.querySelectorAll('.ipcomment').forEach(div => div.remove())
         var rows = document.querySelector('table').rows
         rows.map = [].map
         rows.map((row, index) => {
-          if (index < 2) return null
+          if (index < 1 || row.classList.contains('region-title')) return null
           const cells = row.cells
           cells.map = [].map
           return cells.map((cell, index) => {
@@ -179,7 +243,9 @@ async function parseTable(data) {
       tableData = [...tableData, ...await getTableData()]
     }
 
+    clearTimeout(data.createPage.timer)
     await page.close()
+
     return tableData
   } catch (error) {
     // console.log(error)

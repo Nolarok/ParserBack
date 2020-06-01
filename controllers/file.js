@@ -9,7 +9,7 @@ export default class FileController {
   async createFile(ctx) {
     const {content, filename} = ctx.request.body
 
-    const fileErrors = (await read(content)).errors
+    const {errors: fileErrors, type} = await read(content)
 
     if (fileErrors.length) {
       ctx.status = 400
@@ -22,7 +22,8 @@ export default class FileController {
 
     const newFile = new File({
       data: content,
-      filename
+      filename,
+      type
     })
 
     ctx.body = (await newFile.save())

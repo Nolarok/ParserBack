@@ -14,8 +14,6 @@ export default class TaskController {
       ctx.body = await Task.find({jobId: ctx.params.id})
         .select('-errorTrace -payload')
         .sort('-created')
-        .skip(limit * offset)
-        .limit(limit)
 
     } else if (ctx.params.id) {
       ctx.body = await Task.findOne({_id: ctx.params.id})

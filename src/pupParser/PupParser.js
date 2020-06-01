@@ -10,6 +10,7 @@ export default function Pup(launchOptions) {
 
   this.init = async () => {
     this.browser = await puppeteer.launch(launchOptions)
+    return this.browser
   }
 
   this.createPage = async (url, interceptors) => {

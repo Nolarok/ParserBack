@@ -23,8 +23,9 @@ const FileSchema = new Schema({
     default: format(new Date(), 'dd.MM.yyyy hh:mm')
   },
 
-  isValid: {
-    type: Boolean,
+  type: {
+    type: String,
+    required: true
   }
 })
 

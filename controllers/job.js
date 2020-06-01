@@ -10,7 +10,7 @@ const Job = mongoose.model('Job')
 const Task = mongoose.model('Task')
 const File = mongoose.model('File')
 
-const matches = {
+const matchesFIO = {
   0: 'debtor',
   1: 'exec_production',
   2: 'requisites',
@@ -122,10 +122,12 @@ export default class JobController {
       jobId: ctx.params.jobId
     })
 
+    const filename = await Job.getFileName(ctx.params.jobId)
+
     const result = response.map((task) => {
       return task.result.map((result) => {
          return result.reduce((acc, item, index) => {
-           acc[matches[index]] = item
+           acc[matchesFIO[index]] = item
 
            return acc
          }, {})
@@ -133,6 +135,7 @@ export default class JobController {
     }).flat()
 
     ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    ctx.set('Content-Disposition', `attachment; filename="report:${filename}"`)
     ctx.body = await generate(result)
   }
 
@@ -179,7 +182,7 @@ export default class JobController {
 
       for (let i = 0; i < response.length; i++) {
         const job = response[i].toObject()
-        console.log({job})
+        job.fileName = await Job.getFileName(job._id)
         job.tasksState = {
           failed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.ERROR}) | NaN,
           completed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.COMPLETED}) | NaN,
@@ -198,8 +201,6 @@ export default class JobController {
   }
 
   async test(ctx) {
-
-
     const result = await generate()
 
     ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

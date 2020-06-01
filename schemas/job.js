@@ -2,6 +2,8 @@ import mongoose, {Schema} from 'mongoose'
 import {JobStatus, TaskStatus} from '../types'
 import {FSSPParser} from "../src/pupParser"
 import {RESULT} from "../src/pupParser/types"
+import {DocumentType} from '../src/excel'
+
 
 const JobSchema = new Schema({
   created: {
@@ -25,6 +27,7 @@ const JobSchema = new Schema({
 })
 
 const Task = mongoose.model('Task')
+const File = mongoose.model('File')
 const ObjectId = mongoose.Types.ObjectId
 
 JobSchema.pre('deleteOne', async function () {
@@ -37,10 +40,13 @@ JobSchema.pre('deleteMany', async function () {
   await Task.deleteMany()
 })
 
-JobSchema.static('getCountItems', async function(query) {
-  const result = await Job.find(query)
-  return result.length || 0
+JobSchema.static('getFileName', async function (_id) {
+  const job = await Job.findOne({_id})
+  const file = await File.findOne({_id: job.fileId})
+  return file.filename
 })
+
+
 
 JobSchema.static('startParse', async function startParse(job) {
   if (!job) {
@@ -52,6 +58,8 @@ JobSchema.static('startParse', async function startParse(job) {
       return
     }
   }
+
+  const {type} = await File.findOne({_id: job.fileId})
 
   const jobId = job._id
 
@@ -69,24 +77,40 @@ JobSchema.static('startParse', async function startParse(job) {
   await Task.updateMany(
     {
       jobId,
-      status: { $in: [TaskStatus.CREATED, TaskStatus.ERROR] }
+      status: {$in: [TaskStatus.CREATED, TaskStatus.ERROR]}
     },
     {status: TaskStatus.QUEUE}
   )
 
-  const tasks = docs.reduce((acc, row) => {
-    acc.push({
-      'id': new ObjectId(row._id),
-      'Имя': row.payload.name,
-      'Фамилия': row.payload.surname,
-      'Отчество': row.payload.patronymic,
-      'Дата': row.payload.date,
-    })
+  let tasks
 
-    return acc
-  }, [])
+  if (type === DocumentType.FIO) {
+    tasks = docs.reduce((acc, row) => {
+      acc.push({
+        'id': new ObjectId(row._id),
+        'Имя': row.payload.name,
+        'Фамилия': row.payload.surname,
+        'Отчество': row.payload.patronymic,
+        'Дата': row.payload.date,
+      })
+
+      return acc
+    }, [])
+  }
+
+  if (type === DocumentType.IP) {
+    tasks = docs.reduce((acc, row) => {
+      acc.push({
+        'id': new ObjectId(row._id),
+        'Номер_ИП': row.payload.ipNumber,
+      })
+
+      return acc
+    }, [])
+  }
 
   await FSSPParser(
+    type,
     tasks,
     (data) => {
       Task.updateOne({_id: new ObjectId(data.id)}, {status: TaskStatus.PROCESS})
@@ -119,7 +143,7 @@ JobSchema.static('startParse', async function startParse(job) {
   )
 
   const jobHasErrors = await Task.findOne({jobId, status: TaskStatus.ERROR})
-  await Job.updateOne({_id: jobId}, {status: jobHasErrors? JobStatus.COMPLETED_WITH_ERRORS : JobStatus.COMPLETED})
+  await Job.updateOne({_id: jobId}, {status: jobHasErrors ? JobStatus.COMPLETED_WITH_ERRORS : JobStatus.COMPLETED})
   startParse()
 })
 
