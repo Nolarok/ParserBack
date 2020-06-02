@@ -63,10 +63,10 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
 async function createPage(data) {
   const page = await parser.createPage('http://fssprus.ru/iss/ip')
-  const timer = setTimeout(() => {
-    console.error('script timeout')
-    page.close()
-  }, MAX_PAGE_LIFE)
+  // const timer = setTimeout(() => {
+  //   console.error('script timeout')
+  //   page.close()
+  // }, MAX_PAGE_LIFE)
   return {
     page,
     initial: data.initial,
@@ -249,7 +249,7 @@ async function parseTable(data) {
       tableData = [...tableData, ...await getTableData()]
     }
 
-    clearTimeout(data.createPage.timer)
+    // clearTimeout(data.createPage.timer)
     await page.close()
 
     return tableData
