@@ -4,7 +4,10 @@ import {INPUT_TYPE, RESULT} from './types'
 import {DocumentType} from '../excel'
 
 const MAX_PAGE_LIFE = 30000
-const parser = new PupParser({headless: true})
+const parser = new PupParser({
+  headless: true,
+  args: ['--no-sandbox']
+})
 const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
 
 export const FSSPParser = async (parseType, taskList, before, after) => {
