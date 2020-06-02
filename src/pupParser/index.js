@@ -43,23 +43,20 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
 
   if (parseType === DocumentType.FIO) {
-    console.log('1')
     await parser.runSeries('parseByFIO', taskList, {
-      numberOfThreads: 4,
-      after,
-      before,
-    })
-  }
-
-  if (parseType === DocumentType.IP) {
-    console.log('2')
-    await parser.runSeries('parseByIP', taskList, {
       numberOfThreads: 2,
       after,
       before,
     })
   }
 
+  if (parseType === DocumentType.IP) {
+    await parser.runSeries('parseByIP', taskList, {
+      numberOfThreads: 2,
+      after,
+      before,
+    })
+  }
 
   await parser.browser.close()
 }
@@ -209,6 +206,8 @@ async function parseTable(data) {
     }
 
     const getTableData = async () => {
+      await page.waitFor(500)
+
       try {
         return await page.evaluate(`
         document.querySelectorAll('.ipcomment').forEach(div => div.remove())
