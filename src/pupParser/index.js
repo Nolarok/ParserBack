@@ -3,7 +3,7 @@ import LamaRobot from '../captcha/LamaRobot'
 import {INPUT_TYPE, RESULT} from './types'
 import {DocumentType} from '../excel'
 
-const MAX_PAGE_LIFE = 30000
+const MAX_PAGE_LIFE = 45000
 const parser = new PupParser({
   headless: true,
   args: ['--no-sandbox']
@@ -64,6 +64,7 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 async function createPage(data) {
   const page = await parser.createPage('http://fssprus.ru/iss/ip')
   const timer = setTimeout(() => {
+    console.error('script timeout')
     page.close()
   }, MAX_PAGE_LIFE)
   return {
@@ -206,9 +207,10 @@ async function parseTable(data) {
     }
 
     const getTableData = async () => {
-      await page.waitFor(500)
+      await page.waitFor(400)
 
       try {
+        await page.waitFor(100)
         return await page.evaluate(`
         document.querySelectorAll('.ipcomment').forEach(div => div.remove())
         var rows = document.querySelector('table').rows
