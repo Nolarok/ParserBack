@@ -224,7 +224,9 @@ async function parseTable(data) {
           }).filter(cell => cell !== null)
         }).filter(row => row !== null)
       `)
-      } catch(e) {
+      } catch(error) {
+        console.error(error)
+        return []
         // page.screenshot({path: `./screen/tableErrors/${+new Date}.png`})
       }
     }
