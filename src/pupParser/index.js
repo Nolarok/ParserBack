@@ -70,7 +70,6 @@ async function createPage(data) {
   return {
     page,
     initial: data.initial,
-    timer,
   }
 }
 
