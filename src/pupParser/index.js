@@ -125,8 +125,7 @@ async function searchPageIP(data) {
     await page.waitFor(200)
     // page.screenshot({path: `./screen/test${+new Date()}.png`})
     await page.click('#btn-sbm')
-    await parser.waitForResponse(page, 'https://is.fssprus.ru/ajax_search')
-
+    await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
     return {page}
   } catch (error) {
     // console.log(error)
@@ -149,7 +148,6 @@ async function resolveCaptcha(data) {
       }
 
       captchaImage = await page.evaluate('document.querySelector("#capchaVisual").getAttribute("src")')
-
       inputString = await lamaRobot.solveCaptcha(captchaImage)
 
       if (inputString && !inputString.error) {
@@ -164,7 +162,7 @@ async function resolveCaptcha(data) {
           }
         })
 
-        await parser.waitForResponse(page, 'https://is.fssprus.ru/ajax_search')
+        await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
         if (!(await page.$('.b-form__label.b-form__label--error'))) {
           break
@@ -236,7 +234,7 @@ async function parseTable(data) {
     // сбор данных таблицы по страницам
     while (await page.$('.pagination .active + a')) {
       await page.click('.pagination .active + a')
-      await parser.waitForResponse(page, 'https://is.fssprus.ru/ajax_search')
+      await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
       // проверка наличия запроса капчи
       try {
