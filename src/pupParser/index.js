@@ -41,7 +41,6 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
   IPTask.addScript('resolveCaptcha', resolveCaptcha)
   IPTask.addScript('parseTable', parseTable)
 
-
   if (parseType === DocumentType.FIO) {
     await parser.runSeries('parseByFIO', taskList, {
       numberOfThreads: 2,
@@ -97,7 +96,7 @@ async function searchPage(data) {
     await page.waitFor(200)
     // page.screenshot({path: `./screen/test${+new Date()}.png`})
     await page.click('#btn-sbm')
-    await parser.waitForResponse(page, 'https://is.fssprus.ru/ajax_search')
+    await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
     return {page}
   } catch (error) {
