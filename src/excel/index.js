@@ -1,5 +1,6 @@
 import Excel from 'exceljs'
 import atob from "atob"
+import format from 'date-fns/format'
 
 const columns = [
   {header: 'Должник', key: 'debtor', width: 40},
@@ -237,9 +238,19 @@ const base64ToBuffer = (content) => {
 }
 
 const normalizeDate = (date) => {
-  const day = date.slice(0, 2)
-  const month = date.slice(3, 5)
-  const year = date.slice(6, 10)
+  let _date = date
+  let day, month, year
+  if (_date instanceof Date) {
+    day = format(_date, 'dd')
+    month = format(_date, 'MM')
+    year = format(_date, 'yyyy')
+  } else {
+    day = date.slice(0, 2)
+    month = date.slice(3, 5)
+    year = date.slice(6, 10)
+  }
+
+  console.log(`${month}.${day}.${year}`)
 
   return new Date(`${month}.${day}.${year}`)
 }
