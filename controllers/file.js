@@ -58,11 +58,20 @@ export default class FileController {
       }
 
       const count = await File.countDocuments(query)
-      const data = await File.find(query)
-        .select('-data -updated')
-        .sort('-created')
-        .limit(limit)
-        .skip(offset)
+      const data = await File.aggregate([
+        {$lookup: {from: "jobs", localField: "_id", foreignField: "fileId", as: "jobs"}},
+        {$limit: limit},
+        {$skip: offset},
+        {
+          $project: {
+            "filename": 1,
+            "created": 1,
+            "lastTaskId": { $max: '$jobs._id' }
+          },
+        },
+        {$sort: {created: -1}}
+      ])
+
 
       ctx.body = {data, count}
     }

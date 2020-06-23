@@ -11,6 +11,8 @@ const parser = new PupParser({
 const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
 
 export const FSSPParser = async (parseType, taskList, before, after) => {
+  const id = Math.random()
+  console.time(id)
   FSSPParser.browser = await parser.init()
 
   const FIOTask = parser.createTask('parseByFIO', {
@@ -44,7 +46,7 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
   if (parseType === DocumentType.FIO) {
     await parser.runSeries('parseByFIO', taskList, {
-      numberOfThreads: 2,
+      numberOfThreads: 6,
       after,
       before,
     })
@@ -52,13 +54,14 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
   if (parseType === DocumentType.IP) {
     await parser.runSeries('parseByIP', taskList, {
-      numberOfThreads: 2,
+      numberOfThreads: 6,
       after,
       before,
     })
   }
 
   await parser.browser.close()
+  console.timeEnd(id)
 }
 
 async function createPage(data) {

@@ -40,13 +40,32 @@ JobSchema.pre('deleteMany', async function () {
   await Task.deleteMany()
 })
 
+JobSchema.static('findByFileName', async function(ctx) {
+  let {limit = 10, offset = 0, search} = ctx.query
+  limit = +limit
+  offset = +offset
+
+  const filesIds = await File.find({filename: new RegExp(`${search}`)})
+    .select('_id')
+
+  const query = {
+    fileId: {$in: filesIds.map(item => item._id)}
+  }
+
+  const count = await Job.countDocuments(query)
+  const jobs = await Job.find(query)
+    .sort('-created')
+    .skip(limit * offset)
+    .limit(limit)
+
+  return {jobs, count}
+})
+
 JobSchema.static('getFileName', async function (_id) {
   const job = await Job.findOne({_id})
   const file = await File.findOne({_id: job.fileId})
-  return file.filename
+  return file.filename || ''
 })
-
-
 
 JobSchema.static('startParse', async function startParse(job) {
   if (!job) {

@@ -45,7 +45,6 @@ const Task = mongoose.model('Task', TaskSchema)
 // })
 
 TaskSchema.post(('deleteMany'), (doc) => {
-  console.log({doc})
 })
 //
 // TaskSchema.pre(('deleteMany'), (doc) => {

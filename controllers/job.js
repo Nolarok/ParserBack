@@ -3,7 +3,8 @@ import {generateResponseError, JobStatus, ResponseError, TaskStatus} from '../ty
 
 import '../schemas/job'
 import {generate, read} from '../src/excel/index'
-
+import addMonths from 'date-fns/addMonths'
+import addDays from 'date-fns/addDays'
 
 const ObjectId = mongoose.Types.ObjectId
 const Job = mongoose.model('Job')
@@ -87,36 +88,6 @@ export default class JobController {
     ctx.body = 200
   }
 
-  async unloadDataString(ctx) {
-    const response = await Task.find({
-      jobId: ctx.params.jobId
-    })
-
-    const result = response.reduce((acc, item) => {
-      if (Array.isArray(item.result)) {
-        const data = item.result.map((row) => {
-          return row.filter((cell) => {
-            return !~cell.indexOf('<h3>')
-          })
-        })
-
-        acc = [...acc, ...data]
-      }
-
-      return acc
-    }, [])
-
-    const temp = result.map(row => {
-      const modCurrentRow = row.map((cell) => {
-        return cell.replace(/,/g, ' ')
-      })
-
-      return modCurrentRow.join(',')
-    })
-
-    ctx.body = temp.join('\n')
-  }
-
   async unloadData(ctx) {
     const response = await Task.find({
       jobId: ctx.params.jobId
@@ -126,16 +97,16 @@ export default class JobController {
 
     const result = response.map((task) => {
       return task.result.map((result) => {
-         return result.reduce((acc, item, index) => {
-           acc[matchesFIO[index]] = item
+        return result.reduce((acc, item, index) => {
+          acc[matchesFIO[index]] = item
 
-           return acc
-         }, {})
+          return acc
+        }, {})
       })
     }).flat()
 
     ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    ctx.set('Content-Disposition', `attachment; filename="report:${filename}"`)
+    ctx.set('Content-Disposition', `attachment; filename="report.xlsx"`)
     ctx.body = await generate(result)
   }
 
@@ -153,7 +124,13 @@ export default class JobController {
   }
 
   async getJob(ctx) {
-    let {limit = 10, offset = 0, from, to} = ctx.query
+    let {
+      limit = 10,
+      offset = 0,
+      from = addMonths(new Date(), -1),
+      to = addDays(new Date(), 1)
+    } = ctx.query
+
     limit = +limit
     offset = +offset
 
@@ -162,8 +139,10 @@ export default class JobController {
         .sort('-created')
         .skip(limit * offset)
         .limit(limit)
+
     } else if (ctx.params.id) {
       ctx.body = await Job.findOne({_id: ctx.params.id})
+
     } else {
       const query = {
         created: {
@@ -172,11 +151,19 @@ export default class JobController {
         }
       }
 
-      const count = await Job.countDocuments(query)
-      const response = await Job.find(query)
-        .sort('-created')
-        .skip(limit * offset)
-        .limit(limit)
+      let count, response
+
+      if(ctx.query.search) {
+        const data = await this.search(ctx, ctx.query.search)
+        count = data.count
+        response = data.jobs
+      } else {
+        count = await Job.countDocuments(query)
+        response = await Job.find(query)
+          .sort('-created')
+          .skip(limit * offset)
+          .limit(limit)
+      }
 
       const result = []
 
@@ -187,7 +174,10 @@ export default class JobController {
           failed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.ERROR}) | NaN,
           completed: await Task.countDocuments({jobId: response[i]._id, status: TaskStatus.COMPLETED}) | NaN,
           summary: await Task.countDocuments({jobId: response[i]._id}) | NaN,
-          notProcessed: await Task.countDocuments({jobId: response[i]._id, status: {$in: [TaskStatus.CREATED, TaskStatus.QUEUE]}})  | NaN
+          notProcessed: await Task.countDocuments({
+            jobId: response[i]._id,
+            status: {$in: [TaskStatus.CREATED, TaskStatus.QUEUE]}
+          }) | NaN
         }
 
         result.push(job)
@@ -198,6 +188,17 @@ export default class JobController {
         count
       }
     }
+  }
+
+  async search(ctx, str) {
+    const resultById = await Job.findOne({_id: str})
+      .catch(error => {})
+
+    if (resultById) {
+      return {count: resultById.length, jobs: [resultById]}
+    }
+
+    return await Job.findByFileName(ctx, str)
   }
 
   async test(ctx) {

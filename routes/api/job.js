@@ -43,4 +43,8 @@ router.get('/', async (ctx, next) => {
   await jobCtrl.getJob(ctx)
 })
 
+router.get('/search/:str', async (ctx, next) => {
+  await jobCtrl.search(ctx)
+})
+
 export default router
