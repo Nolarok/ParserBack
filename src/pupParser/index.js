@@ -45,7 +45,7 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
   if (parseType === DocumentType.FIO) {
     await parser.runSeries('parseByFIO', taskList, {
-      numberOfThreads: 6,
+      numberOfThreads: 8,
       after,
       before,
     })
@@ -53,7 +53,7 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
   if (parseType === DocumentType.IP) {
     await parser.runSeries('parseByIP', taskList, {
-      numberOfThreads: 6,
+      numberOfThreads: 8,
       after,
       before,
     })
