@@ -5,7 +5,12 @@ import format from 'date-fns/format'
 const columns = [
   {header: 'Должник', key: 'debtor', width: 40},
   {header: 'Исполнительное производство', key: 'exec_production', width: 40},
+  {header: 'Номер ИП', key: 'number_ep', width: 40},
+  {header: 'Дата ИП', key: 'date_ep', width: 40},
   {header: 'Реквизиты исполнительного документа', key: 'requisites', width: 40},
+  {header: 'Вид ИД', key: 'kind_ed', width: 40},
+  {header: 'Дата ИД', key: 'date_ed', width: 40},
+  {header: 'Номер ИД', key: 'number_ed', width: 40},
   {header: 'Дата, причина окончания или прекращения ИП', key: 'date_and_reason', width: 40},
   {header: 'Предмет исполнения, сумма непогашенной задолженности', key: 'subject_and_amount', width: 40},
   {header: 'Отдел судебных приставов', key: 'department_of_bailiffs', width: 40},
@@ -22,8 +27,20 @@ export const generate = (data) => {
   const worksheet = workbook.addWorksheet('Выгрузка')
 
   worksheet.columns = columns
+  const regED = /^(.+)\s+от\s+(\d{2}\.\d{2}.\d{4})\s+(.+\d);/gm
+  const regEP = /^(.+)\s+от\s+(\d{2}\.\d{2}.\d{4})/gm
+  const empty = 'Нет данных'
+  // добавление столбцов Вид ИД, Дата ИД - от 13.08.2019,Номер ИД - №2-2750/19
+  const _data = data.map((row) => {
 
-  data.forEach(row => {
+    const [,kind_ed = empty, date_ed = empty, number_ed = empty] = Array.from(row.requisites.matchAll(regED)).flat()
+    const [,number_ep = empty, date_ep = empty] = Array.from(row.requisites.matchAll(regEP)).flat()
+    row = {...row, kind_ed, date_ed, number_ed, number_ep, date_ep}
+    return row
+  })
+
+  _data.forEach(row => {
+    console.log({row})
     worksheet.addRow(row)
   })
 
@@ -38,6 +55,7 @@ export const getFile = async (base64Content) => {
 }
 
 export const read = async (base64Content) => {
+  console.log({base64Content})
   try {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(base64ToBuffer(base64Content))
@@ -249,8 +267,6 @@ const normalizeDate = (date) => {
     month = date.slice(3, 5)
     year = date.slice(6, 10)
   }
-
-  console.log(`${month}.${day}.${year}`)
 
   return new Date(`${month}.${day}.${year}`)
 }
