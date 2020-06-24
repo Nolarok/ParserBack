@@ -43,7 +43,6 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
   IPTask.addScript('resolveCaptcha', resolveCaptcha)
   IPTask.addScript('parseTable', parseTable)
 
-
   if (parseType === DocumentType.FIO) {
     await parser.runSeries('parseByFIO', taskList, {
       numberOfThreads: 6,
@@ -152,7 +151,6 @@ async function resolveCaptcha(data) {
       }
 
       captchaImage = await page.evaluate('document.querySelector("#capchaVisual").getAttribute("src")')
-
       inputString = await lamaRobot.solveCaptcha(captchaImage)
 
       if (inputString && !inputString.error) {
