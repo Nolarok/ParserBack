@@ -34,7 +34,7 @@ export const generate = (data) => {
   const _data = data.map((row) => {
 
     const [,kind_ed = empty, date_ed = empty, number_ed = empty] = Array.from(row.requisites.matchAll(regED)).flat()
-    const [,number_ep = empty, date_ep = empty] = Array.from(row.requisites.matchAll(regEP)).flat()
+    const [,number_ep = empty, date_ep = empty] = Array.from(row.exec_production.matchAll(regEP)).flat()
     row = {...row, kind_ed, date_ed, number_ed, number_ep, date_ep}
     return row
   })
