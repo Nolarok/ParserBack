@@ -5,6 +5,7 @@ import '../schemas/job'
 import {generate, read} from '../src/excel/index'
 import addMonths from 'date-fns/addMonths'
 import addDays from 'date-fns/addDays'
+import encodeUrl from 'encodeurl'
 
 const ObjectId = mongoose.Types.ObjectId
 const Job = mongoose.model('Job')
@@ -106,7 +107,7 @@ export default class JobController {
     }).flat()
 
     ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    ctx.set('Content-Disposition', `attachment; filename="report.xlsx"`)
+    ctx.set('Content-Disposition', `attachment; filename="${encodeUrl(filename)}"`)
     ctx.body = await generate(result)
   }
 

@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import encodeUrl from 'encodeurl'
 
 import '../schemas/file'
 import {read, getFile} from '../src/excel/index'
@@ -36,7 +37,7 @@ export default class FileController {
       .select('data filename')
 
     ctx.set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    ctx.set('Content-Disposition', `attachment; filename="${file.filename}"`)
+    ctx.set('Content-Disposition', `attachment; filename="${encodeUrl(file.filename)}"`)
     ctx.body = await getFile(file.data)
   }
 
