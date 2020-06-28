@@ -8,7 +8,7 @@ const parser = new PupParser({
   headless: true,
   args: ['--no-sandbox']
 })
-const lamaRobot = new LamaRobot({Token: '90e2245b92d727bc3dd6aeba649a6ad4185ba716'})
+const lamaRobot = new LamaRobot({Token: '0ba2f20951acb3c57fdeadd91eb358ec3d4a91ba'})
 
 export const FSSPParser = async (parseType, taskList, before, after) => {
   const id = Math.random()
