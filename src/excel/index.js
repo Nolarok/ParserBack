@@ -27,12 +27,11 @@ export const generate = (data) => {
   const worksheet = workbook.addWorksheet('Выгрузка')
 
   worksheet.columns = columns
-  const regED = /^(.+)\s+от\s+(\d{2}\.\d{2}.\d{4})\s+(.+\d);/gm
+  const regED = /^(.+)\s+от\s+(\d{2}\.\d{2}.\d{4})\s+№ (.+\d);/gm
   const regEP = /^(.+)\s+от\s+(\d{2}\.\d{2}.\d{4})/gm
   const empty = 'Нет данных'
   // добавление столбцов Вид ИД, Дата ИД - от 13.08.2019,Номер ИД - №2-2750/19
   const _data = data.map((row) => {
-
     const [,kind_ed = empty, date_ed = empty, number_ed = empty] = Array.from(row.requisites.matchAll(regED)).flat()
     const [,number_ep = empty, date_ep = empty] = Array.from(row.exec_production.matchAll(regEP)).flat()
     row = {...row, kind_ed, date_ed, number_ed, number_ep, date_ep}
