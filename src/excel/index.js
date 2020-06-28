@@ -40,7 +40,6 @@ export const generate = (data) => {
   })
 
   _data.forEach(row => {
-    console.log({row})
     worksheet.addRow(row)
   })
 
@@ -55,7 +54,6 @@ export const getFile = async (base64Content) => {
 }
 
 export const read = async (base64Content) => {
-  console.log({base64Content})
   try {
     const workbook = new Excel.Workbook()
     await workbook.xlsx.load(base64ToBuffer(base64Content))
