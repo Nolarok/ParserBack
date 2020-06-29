@@ -65,6 +65,7 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 
 async function createPage(data) {
   const page = await parser.createPage('http://fssprus.ru/iss/ip')
+  console.log('createPage')
   // const timer = setTimeout(() => {
   //   console.error('script timeout')
   //   page.close()
@@ -76,6 +77,8 @@ async function createPage(data) {
 }
 
 async function searchPage(data) {
+  console.log('searchPage')
+
   try {
     const initial = data.initial
     const page = data.createPage.page
@@ -103,13 +106,14 @@ async function searchPage(data) {
 
     return {page}
   } catch (error) {
-    // console.log(error)
+    console.log(error)
     // await page.screenshot({path: `./screen/scripts/searchPage/${+new Date()}.png`})
     throw error
   }
 }
 
 async function searchPageIP(data) {
+  console.log('searchPageIP')
   try {
     const initial = data.initial
     const page = data.createPage.page
@@ -132,13 +136,14 @@ async function searchPageIP(data) {
 
     return {page}
   } catch (error) {
-    // console.log(error)
+    console.log(error)
     // await page.screenshot({path: `./screen/scripts/searchPage/${+new Date()}.png`})
     throw error
   }
 }
 
 async function resolveCaptcha(data) {
+  console.log('resolveCaptcha')
   const {page} = data.searchPage
 
   try {
@@ -193,6 +198,7 @@ async function resolveCaptcha(data) {
 }
 
 async function parseTable(data) {
+  console.log('parseTable')
   const {page} = data.resolveCaptcha
   try {
     const initial = data.initial
