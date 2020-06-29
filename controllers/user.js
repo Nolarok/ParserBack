@@ -69,6 +69,11 @@ export default class UserController {
       ctx.status = 400
     }
   }
+
+  async drop(ctx) {
+    await User.deleteMany()
+    ctx.body = 200
+  }
 }
 
 async function setAdminUser() {
@@ -81,7 +86,7 @@ async function setAdminUser() {
         login: 'admin@admin.ru'
       })
 
-      admin.setPassword('admin')
+      admin.setPassword('CXS5klLgkX')
 
       await admin.save()
     }

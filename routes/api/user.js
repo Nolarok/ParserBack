@@ -24,6 +24,10 @@ router.get('/list', async (ctx, next) => {
   await userCtrl.getList(ctx)
 })
 
+router.delete('/drop', async (ctx, next) => {
+  await userCtrl.drop(ctx)
+})
+
 router.delete('/:id', async (ctx, next) => {
   if (!ctx.user) {
     ctx.status = 401
