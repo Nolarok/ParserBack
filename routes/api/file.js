@@ -19,10 +19,18 @@ router.get('/content/:fileId', async (ctx) => {
 })
 
 router.post('/', async (ctx) => {
+  if (!ctx.user) {
+    ctx.status = 401
+    return
+  }
   await fileCtrl.createFile(ctx)
 })
 
 router.delete('/', async (ctx) => {
+  if (!ctx.user) {
+    ctx.status = 401
+    return
+  }
   await fileCtrl.clearTable(ctx)
 })
 

@@ -58,10 +58,6 @@ router.delete('/', async (ctx, next) => {
 })
 
 router.get('/unload/:jobId', async (ctx, next) => {
-  if (!ctx.user) {
-    ctx.status = 401
-    return
-  }
   await jobCtrl.unloadData(ctx)
 })
 
