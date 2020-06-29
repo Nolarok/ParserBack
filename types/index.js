@@ -1,4 +1,3 @@
-
 export const TaskStatus = {
   'CREATED': 'created',
   'QUEUE': 'queue',
@@ -15,6 +14,10 @@ export const JobStatus = {
   'COMPLETED_WITH_ERRORS': 'completed_with_errors',
 }
 
+export const Roles = {
+  'USER': 'user',
+  'ADMIN': 'admin',
+}
 
 export const ResponseError = {
   'RECORD_NOT_FOUND': {
