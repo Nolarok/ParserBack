@@ -127,6 +127,7 @@ async function searchPageIP(data) {
     await page.waitFor(200)
     // page.screenshot({path: `./screen/test${+new Date()}.png`})
     await page.click('#btn-sbm')
+    console.log('...........')
     await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
     return {page}
@@ -152,6 +153,8 @@ async function resolveCaptcha(data) {
 
       captchaImage = await page.evaluate('document.querySelector("#capchaVisual").getAttribute("src")')
       inputString = await lamaRobot.solveCaptcha(captchaImage)
+      console.log('captcha: ', inputString)
+
 
       if (inputString && !inputString.error) {
 
@@ -161,7 +164,6 @@ async function resolveCaptcha(data) {
           afterInput: async () => {
             await page.focus('#captcha-popup-code')
             await page.keyboard.press('Enter')
-            console.log('captcha: ', inputString)
           }
         })
 
