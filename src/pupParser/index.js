@@ -161,7 +161,7 @@ async function resolveCaptcha(data) {
           afterInput: async () => {
             await page.focus('#captcha-popup-code')
             await page.keyboard.press('Enter')
-            // console.log('captcha: ', inputString)
+            console.log('captcha: ', inputString)
           }
         })
 
@@ -196,6 +196,7 @@ async function parseTable(data) {
     const initial = data.initial
 
     // проверка наличия данных
+    await page.waitFor(250)
     if (await page.$('.b-search-message')) {
       await page.close()
       return [
