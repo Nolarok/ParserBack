@@ -79,7 +79,7 @@ export default class UserController {
 async function setAdminUser() {
   try {
     const adminUserExist = await User.findOne({role: Roles.ADMIN})
-
+//
     if (!adminUserExist) {
       const admin = new User({
         role: Roles.ADMIN,
