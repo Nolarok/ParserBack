@@ -33,7 +33,7 @@ export default class UserController {
 
     if (await User.findOne({login})) {
       ctx.status = 400
-      ctx.body = {message: `Пользователь '${login}' уже существует`}
+      ctx.body = {message: `Авторизация: Пользователь '${login}' уже существует`}
       return
     }
 
@@ -45,9 +45,9 @@ export default class UserController {
 
     newUser.setPassword(password)
 
-    const id = (await newUser.save())._id
+    const _id = (await newUser.save())._id
 
-    ctx.body = id
+    ctx.body = {_id, login, role: Roles.USER}
   }
 
   async getList(ctx) {
@@ -61,8 +61,6 @@ export default class UserController {
     const id = ctx.params.id
 
     const user = await User.findOne({_id: id})
-
-    console.log({id, user})
 
     if (user && user.role !== Roles.ADMIN) {
       await User.deleteOne({_id: id})

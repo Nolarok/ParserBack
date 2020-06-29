@@ -51,7 +51,6 @@ export function useMiddleware(app) {
     }
 
     passport.use(new JwtStrategy(jwtOptions, async function (payload, done) {
-            // console.log('JwtStrategy', payload)
             User.findOne({login: payload.login})
                 .then(user => {
                     user ? done(null, user) : done(null, false)
