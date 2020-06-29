@@ -10,6 +10,34 @@ router.get('/', async (ctx, next) => {
   await userCtrl.login(ctx)
 })
 
+router.get('/list', async (ctx, next) => {
+  if (!ctx.user) {
+    ctx.status = 401
+    return
+  }
+
+  if (!ctx.user.isAdmin()) {
+    ctx.status = 403
+    return
+  }
+
+  await userCtrl.getList(ctx)
+})
+
+router.delete('/:id', async (ctx, next) => {
+  if (!ctx.user) {
+    ctx.status = 401
+    return
+  }
+
+  if (!ctx.user.isAdmin()) {
+    ctx.status = 403
+    return
+  }
+
+  await userCtrl.delete(ctx)
+})
+
 router.post('/', async (ctx, next) => {
   if (!ctx.user) {
     ctx.status = 401

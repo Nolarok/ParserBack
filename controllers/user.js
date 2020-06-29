@@ -10,74 +10,85 @@ const User = mongoose.model('User')
 setAdminUser()
 
 export default class UserController {
-    async login(ctx, next) {
-        await passport.authenticate('local', (error, user, info) => {
-            if (error) {
-                ctx.status = 400
-                console.error(error)
-                return
-            }
+  async login(ctx, next) {
+    await passport.authenticate('local', (error, user, info) => {
+      if (error) {
+        ctx.status = 400
+        console.error(error)
+        return
+      }
 
-            if (user) {
-                user.token = user.generateJWT()
-                ctx.body = {token: user.token}
-                return
-            }
-        })(ctx, next)
+      if (user) {
+        user.token = user.generateJWT()
+        ctx.body = {token: user.token}
+        return
+      }
+    })(ctx, next)
 
-        return ctx
+    return ctx
+  }
+
+  async create(ctx, next) {
+    const {password, login} = ctx.request.body
+
+    if (await User.findOne({login})) {
+      ctx.status = 400
+      ctx.body = {message: `Пользователь '${login}' уже существует`}
+      return
     }
 
-    async create(ctx, next) {
-        const {password, login} = ctx.request.body
+    const newUser = new User({
+      password,
+      login,
+      role: Roles.USER
+    })
 
-        if (!ctx.user) {
-            ctx.status = 401
-            return
-        }
+    newUser.setPassword(password)
 
-        if (!ctx.user.isAdmin()) {
-            ctx.status = 403
-            return
-        }
+    const id = (await newUser.save())._id
 
-        if (await User.findOne({login})) {
-            ctx.status = 400
-            ctx.body = {message: `Пользователь '${login}' уже существует`}
-            return
-        }
+    ctx.body = id
+  }
 
-        const newUser = new User({
-            password,
-            login,
-            role: Roles.USER
-        })
+  async getList(ctx) {
+    const users = await User.find({role: Roles.USER})
+      .select('login role')
 
-        newUser.setPassword(password)
+    ctx.body = users
+  }
 
-        const id = (await newUser.save())._id
+  async delete(ctx) {
+    const id = ctx.params.id
 
-        ctx.body = id
+    const user = await User.findOne({_id: id})
+
+    console.log({id, user})
+
+    if (user && user.role !== Roles.ADMIN) {
+      await User.deleteOne({_id: id})
+      ctx.status = 200
+    } else {
+      ctx.status = 400
     }
-
+  }
 }
 
 async function setAdminUser() {
-    try {
-        const adminUserExist = await User.findOne({role: Roles.ADMIN})
+  try {
+    const adminUserExist = await User.findOne({role: Roles.ADMIN})
 
-        if (!adminUserExist) {
-            const admin = new User({
-                role: Roles.ADMIN,
-                login: 'admin@admin.ru'
-            })
+    if (!adminUserExist) {
+      const admin = new User({
+        role: Roles.ADMIN,
+        login: 'admin@admin.ru'
+      })
 
-            admin.setPassword('admin')
+      admin.setPassword('admin')
 
-            await admin.save()
-        }
-
-    } catch (error) {
-        console.error(error)
+      await admin.save()
     }
+
+  } catch (error) {
+    console.error(error)
+  }
 }
