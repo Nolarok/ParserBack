@@ -2,12 +2,13 @@ import PupParser from './PupParser'
 import LamaRobot from '../captcha/LamaRobot'
 import {INPUT_TYPE, RESULT} from './types'
 import {DocumentType} from '../excel'
+import path from 'path'
 
 const MAX_PAGE_LIFE = 45000
 const parser = new PupParser({
-  headless: true,
-  args: ['--no-sandbox']
+  headless: false
 })
+
 const lamaRobot = new LamaRobot({Token: '0ba2f20951acb3c57fdeadd91eb358ec3d4a91ba'})
 
 export const FSSPParser = async (parseType, taskList, before, after) => {
@@ -104,6 +105,17 @@ async function searchPage(data) {
     await page.click('#btn-sbm')
     await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
+    // Блокировка отлавливается тут ->
+    const overload = await page.$eval('.results .b-search-message__text h4', el => el.textContent).catch(() => {})
+
+    if (overload === 'Не удалось осуществить поиск: система перегружена') {
+      await parser.changeProxy()
+      throw new Error('Server overload')
+    } else {
+      console.log({overload})
+      // await page.screenshot({path: path.join(__dirname, `./screen/scripts/searchPage/${+new Date()}.png`)})
+    }
+
     return {page}
   } catch (error) {
     console.log(error)
@@ -198,7 +210,6 @@ async function resolveCaptcha(data) {
 }
 
 async function parseTable(data) {
-  console.log('parseTable')
   const {page} = data.resolveCaptcha
   try {
     const initial = data.initial

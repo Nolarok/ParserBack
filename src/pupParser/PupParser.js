@@ -13,6 +13,13 @@ export default function Pup(launchOptions) {
     return this.browser
   }
 
+  this.changeProxy = async () => {
+    this.browser = await puppeteer.launch({
+      ...launchOptions,
+      ...{args: ['--no-sandbox', '--proxy-server=207.244.244.163:3128']}
+    })
+  }
+
   this.createPage = async (url, interceptors) => {
     const context = await this.browser.createIncognitoBrowserContext()
     const page = await context.newPage()
