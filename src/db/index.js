@@ -1,6 +1,8 @@
 import mongoose from 'mongoose'
 
 export async function dbConnect({host, port, name}) {
+  console.log(`DB connect string: mongodb://${host}:${port}`)
+
   const connection = await mongoose.connect(`mongodb://${host}:${port}`, {
     dbName: name,
     useNewUrlParser: true,
