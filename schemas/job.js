@@ -194,11 +194,12 @@ JobSchema.static('startParse', async function startParse(job) {
     },
     proxy
   ).catch(async error => {
-    console.log('OVEEERRRRLLOOOAAADDD')
     console.log(error)
-    proxy && await Proxy.setBlocked(proxy._id)
     await Job.reset()
-    await startParse(job)
+    proxy && await Proxy.setBlocked(proxy._id)
+    if (error.message === 'Server overload' && proxy) {
+      await startParse(job)
+    }
   })
 
   const jobHasErrors = await Task.findOne({jobId, status: TaskStatus.ERROR})
