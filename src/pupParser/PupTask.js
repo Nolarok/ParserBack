@@ -1,6 +1,6 @@
 import {RESULT} from "./types"
 
-export default function PupTask(createPage, options) {
+export default function PupTask(createPage, options, initial) {
   this.scripts = []
 
   const getScript = (name) => {
@@ -16,7 +16,7 @@ export default function PupTask(createPage, options) {
   }
 
   this._execute = async () => {
-    let data = {}
+    let data = {...data, ...initial}
     let name = ''
 
     try {
@@ -25,6 +25,11 @@ export default function PupTask(createPage, options) {
         data = {...data, [this.scripts[i].name]: await this.scripts[i].script(data)}
       }
     } catch (error) {
+
+      if (error.message === 'Server overload') {
+        throw error
+      }
+
       console.error(`Script ${name} was failed: ${error.message}`)
 
       return {
@@ -55,7 +60,15 @@ export default function PupTask(createPage, options) {
 
     while (result.result !== RESULT.SUCCESS && numberOfAttempts < (options.maxNumberOfAttempts || 1)) {
       numberOfAttempts++
-      result = await this._execute()
+
+      try {
+        result = await this._execute()
+      } catch (error) {
+
+        if (error.message === 'Server overload') {
+          throw error
+        }
+      }
 
       if (result.result === RESULT.FAIL) {
         try {
@@ -69,9 +82,3 @@ export default function PupTask(createPage, options) {
     return result
   }
 }
-
-/*
-TODO
-  вынести в конфиг количество попыток решения задачи
-  добавить логгер
- */

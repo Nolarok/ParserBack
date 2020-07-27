@@ -22,6 +22,8 @@ const matchesFIO = {
   6: 'bailiff',
 }
 
+Job.reset()
+
 export default class JobController {
   async create(ctx) {
     const fileId = new ObjectId(ctx.params.fileId)

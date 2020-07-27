@@ -5,24 +5,29 @@ import {DocumentType} from '../excel'
 import path from 'path'
 
 const MAX_PAGE_LIFE = 45000
-const parser = new PupParser({
-  headless: false
-})
+const parser = new PupParser()
 
 const lamaRobot = new LamaRobot({Token: '0ba2f20951acb3c57fdeadd91eb358ec3d4a91ba'})
 
-export const FSSPParser = async (parseType, taskList, before, after) => {
+export const FSSPParser = async (parseType, taskList, before, after, proxy) => {
   const id = Math.random()
+  const proxyString = proxy ? `--no-sandbox --proxy-server=${proxy.host}:${proxy.port}` : `--no-sandbox`
   console.time(id)
-  FSSPParser.browser = await parser.init()
+  FSSPParser.browser = await parser.init({
+    headless: false,
+    args: [proxyString],
+  })
+  // args: ['--proxy-server=188.130.210.102:5500'],
 
   const FIOTask = parser.createTask('parseByFIO', {
     maxNumberOfAttempts: 1,
     errorScript: (data) => {
-      if (data.createPage && data.createPage && data.createPage.page) {
+      if (data.createPage && data.createPage.page) {
         data.createPage.page.close()
       }
     }
+  }, {
+    proxy
   })
 
   FIOTask.addScript('createPage', createPage)
@@ -33,31 +38,38 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
   const IPTask = parser.createTask('parseByIP', {
     maxNumberOfAttempts: 1,
     errorScript: (data) => {
-      if (data.createPage && data.createPage && data.createPage.page) {
+      if (data.createPage && data.createPage.page) {
         data.createPage.page.close()
       }
     }
+  }, {
+    proxy
   })
 
   IPTask.addScript('createPage', createPage)
   IPTask.addScript('searchPage', searchPageIP)
   IPTask.addScript('resolveCaptcha', resolveCaptcha)
   IPTask.addScript('parseTable', parseTable)
+  try {
+    if (parseType === DocumentType.FIO) {
+      await parser.runSeries('parseByFIO', taskList, {
+        numberOfThreads: 4,
+        after,
+        before,
+      })
+    }
 
-  if (parseType === DocumentType.FIO) {
-    await parser.runSeries('parseByFIO', taskList, {
-      numberOfThreads: 8,
-      after,
-      before,
-    })
-  }
-
-  if (parseType === DocumentType.IP) {
-    await parser.runSeries('parseByIP', taskList, {
-      numberOfThreads: 8,
-      after,
-      before,
-    })
+    if (parseType === DocumentType.IP) {
+      await parser.runSeries('parseByIP', taskList, {
+        numberOfThreads: 4,
+        after,
+        before,
+      })
+    }
+  } catch (error) {
+    console.log('ASDASDASD')
+    await parser.browser.close()
+    throw error
   }
 
   await parser.browser.close()
@@ -65,8 +77,13 @@ export const FSSPParser = async (parseType, taskList, before, after) => {
 }
 
 async function createPage(data) {
-  const page = await parser.createPage('http://fssprus.ru/iss/ip')
-  console.log('createPage')
+  const proxy = data.proxy
+
+    // { username: 'Selremss35', password: 'T8z4PjD' }
+  const page = await parser.createPage('http://fssprus.ru/iss/ip',
+    null,
+    proxy && proxy.login && proxy.password ? { username: proxy.login, password: proxy.password } : null
+    )
   // const timer = setTimeout(() => {
   //   console.error('script timeout')
   //   page.close()
@@ -78,11 +95,11 @@ async function createPage(data) {
 }
 
 async function searchPage(data) {
-  console.log('searchPage')
-
   try {
     const initial = data.initial
     const page = data.createPage.page
+
+    await page.waitForSelector('#ip_form')
 
     const inputData = [
       {selector: '#input01', value: initial['Имя']},
@@ -105,15 +122,16 @@ async function searchPage(data) {
     await page.click('#btn-sbm')
     await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
+    if (Math.round(Math.random())) {
+      throw new Error('Server overload')
+    }
+
     // Блокировка отлавливается тут ->
-    const overload = await page.$eval('.results .b-search-message__text h4', el => el.textContent).catch(() => {})
+    const overload = await page.$eval('.results .b-search-message__text h4', el => el.textContent).catch(() => {
+    })
 
     if (overload === 'Не удалось осуществить поиск: система перегружена') {
-      await parser.changeProxy()
       throw new Error('Server overload')
-    } else {
-      console.log({overload})
-      // await page.screenshot({path: path.join(__dirname, `./screen/scripts/searchPage/${+new Date()}.png`)})
     }
 
     return {page}
@@ -125,7 +143,6 @@ async function searchPage(data) {
 }
 
 async function searchPageIP(data) {
-  console.log('searchPageIP')
   try {
     const initial = data.initial
     const page = data.createPage.page
@@ -143,7 +160,6 @@ async function searchPageIP(data) {
     await page.waitFor(200)
     // page.screenshot({path: `./screen/test${+new Date()}.png`})
     await page.click('#btn-sbm')
-    console.log('...........')
     await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
     return {page}
@@ -155,7 +171,6 @@ async function searchPageIP(data) {
 }
 
 async function resolveCaptcha(data) {
-  console.log('resolveCaptcha')
   const {page} = data.searchPage
 
   try {
@@ -192,17 +207,16 @@ async function resolveCaptcha(data) {
           console.error('Invalid captcha: ', inputString && !inputString.error)
           // await page.screenshot({path: `./screen/${+new Date()}.png`})
         }
-      }
-      else {
+      } else {
         console.error('Invalid captcha: ', inputString && !inputString.error)
         // await page.screenshot({path: `./screen/${+new Date()}.png`})
         page.click('#capchaVisual')
-        await parser.waitForResponse(page,  'data:image')
+        await parser.waitForResponse(page, 'data:image')
       }
     }
 
     return {page}
-  } catch(error) {
+  } catch (error) {
     // console.error(error)
     // await page.screenshot({path: `./screen/scripts/resolveCaptcha/${+new Date()}.png`})
     throw error
@@ -230,22 +244,22 @@ async function parseTable(data) {
       await page.waitFor(400)
 
       try {
-        await page.waitFor(100)
+        await page.waitForSelector('table')
         return await page.evaluate(`
-        document.querySelectorAll('.ipcomment').forEach(div => div.remove())
-        var rows = document.querySelector('table').rows
-        rows.map = [].map
-        rows.map((row, index) => {
-          if (index < 1 || row.classList.contains('region-title')) return null
-          const cells = row.cells
-          cells.map = [].map
-          return cells.map((cell, index) => {
-            if (index === 4) return null
-            return cell.innerHTML.replace(/<br>/g, '; ') //.replace(/,/g, ';  ')
-          }).filter(cell => cell !== null)
-        }).filter(row => row !== null)
+          document.querySelectorAll('.ipcomment').forEach(div => div.remove())
+          var rows = document.querySelector('table').rows
+          rows.map = [].map
+          rows.map((row, index) => {
+            if (index < 1 || row.classList.contains('region-title')) return null
+            const cells = row.cells
+            cells.map = [].map
+            return cells.map((cell, index) => {
+              if (index === 4) return null
+              return cell.innerHTML.replace(/<br>/g, '; ') //.replace(/,/g, ';  ')
+            }).filter(cell => cell !== null)
+          }).filter(row => row !== null)
       `)
-      } catch(error) {
+      } catch (error) {
         console.error(error)
         return []
         // page.screenshot({path: `./screen/tableErrors/${+new Date}.png`})
@@ -264,7 +278,8 @@ async function parseTable(data) {
         if (await page.waitFor('#capchaVisual', {timeout: 200})) {
           await resolveCaptcha(data)
         }
-      } catch (e) {}
+      } catch (e) {
+      }
 
       tableData = [...tableData, ...await getTableData()]
     }

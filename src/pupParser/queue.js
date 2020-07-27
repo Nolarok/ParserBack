@@ -2,10 +2,12 @@ export function Queue (input, length) {
   let _callback = () => {}
   let _handler = () => {}
   let _resolve
+  let _reject
 
   let counter = 0
-  let end = new Promise(resolve => {
+  let end = new Promise((resolve, reject) => {
     _resolve = resolve
+    _reject = reject
   })
 
   this.start = async () => {
@@ -26,6 +28,12 @@ export function Queue (input, length) {
       const promise = _handler(data)
         .then((data) => {
           _callback(data)
+        })
+        .catch(error => {
+          if (error.message === 'Server overload') {
+            this.queue = []
+            _reject(error)
+          }
         })
         .finally(() => {
           this.remove(promise)

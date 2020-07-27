@@ -4,26 +4,20 @@ import {RESULT, INPUT_TYPE} from './types'
 import PupTask from './PupTask'
 import {Queue} from './queue'
 
-export default function Pup(launchOptions) {
+export default function Pup() {
   this.pages = []
   this.tasks = {}
 
-  this.init = async () => {
+  this.init = async (launchOptions, proxy) => {
     this.browser = await puppeteer.launch(launchOptions)
     return this.browser
   }
 
-  this.changeProxy = async () => {
-    this.browser = await puppeteer.launch({
-      ...launchOptions,
-      ...{args: ['--no-sandbox', '--proxy-server=207.244.244.163:3128']}
-    })
-  }
-
-  this.createPage = async (url, interceptors) => {
+  this.createPage = async (url, interceptors, auth) => {
     const context = await this.browser.createIncognitoBrowserContext()
     const page = await context.newPage()
     await page.setViewport({height: 1680, width: 1920})
+    auth && await page.authenticate(auth)
 
     interceptors && await page.setRequestInterception(interceptors)
     interceptors && await interceptors(page)
@@ -40,23 +34,31 @@ export default function Pup(launchOptions) {
   }
 
   this.runSeries = async (taskName, initialArray, options) => {
-    const result = []
-    const queue = new Queue(initialArray, options.numberOfThreads)
+    return new Promise(async (res, rej) => {
+      const result = []
+      const queue = new Queue(initialArray, options.numberOfThreads)
+      queue.setHandler(async (data) => {
+        options.before && options.before(data)
+        await runTask(this.tasks[taskName], data)
+          .then(result => {
+            options.after && options.after(data, result)
+          })
+          .catch((error) => {
+            console.log('!!!!!!!!!!!!!!!!')
+            console.error(error)
+            rej(error)
+          })
+        return result
+      })
 
-    queue.setHandler(async (data) => {
-      options.before && options.before(data)
-      const result = await runTask(this.tasks[taskName], data)
-      options.after && options.after(data, result)
-      return result
+      queue.setFinishCallback((data) => {
+        result.push(data)
+      })
+
+      await queue.start()
+
+      res(result)
     })
-
-    queue.setFinishCallback((data) => {
-      result.push(data)
-    })
-
-    await queue.start()
-
-    return result
   }
 
   let numberActiveProcesses = 0
@@ -78,7 +80,6 @@ export default function Pup(launchOptions) {
 
   this.fillInput = async (page, {selector, value, options = {delay: 10, type: INPUT_TYPE.SCRIPT}, afterInput}) => {
     if (options.type === INPUT_TYPE.SCRIPT) {
-      // console.log({selector, value})
       const injection = `document.querySelector('${selector}').value = "${value}"`
       await page.evaluate(injection)
       afterInput && await afterInput()
