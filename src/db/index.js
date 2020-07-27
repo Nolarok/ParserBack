@@ -7,6 +7,8 @@ export async function dbConnect({host, port, name}) {
     useUnifiedTopology: true,
     user: 'root',
     pass: 'qwAZ11',
+  }).catch(error => {
+    console.error(error)
   })
 }
 
