@@ -122,10 +122,6 @@ async function searchPage(data) {
     await page.click('#btn-sbm')
     await parser.waitForResponse(page, 'https://is.fssp.gov.ru/ajax_search')
 
-    if (Math.round(Math.random())) {
-      throw new Error('Server overload')
-    }
-
     // Блокировка отлавливается тут ->
     const overload = await page.$eval('.results .b-search-message__text h4', el => el.textContent).catch(() => {
     })
