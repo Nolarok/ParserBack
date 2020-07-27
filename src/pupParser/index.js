@@ -14,7 +14,7 @@ export const FSSPParser = async (parseType, taskList, before, after, proxy) => {
   const proxyString = proxy ? `--no-sandbox --proxy-server=${proxy.host}:${proxy.port}` : `--no-sandbox`
   console.time(id)
   FSSPParser.browser = await parser.init({
-    headless: false,
+    headless: true,
     args: [proxyString],
   })
   // args: ['--proxy-server=188.130.210.102:5500'],
